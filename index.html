@@ -54,7 +54,8 @@
     <script>
         var idSesion = "3ds_" + Math.floor(Math.random() * 99999);
         
-        var urlN8n = "https://adlersc.app.n8n.cloud/webhook-test/3ds-memory";
+        // Coloca tu Production URL de n8n entre las comillas reemplazando los emojis
+        var urlN8n = "🥩🥩🥩🥩🥩";
 
         function enviar() {
             var campo = document.getElementById("msgInput");
@@ -68,9 +69,12 @@
             conexion.open("POST", urlN8n, true);
             conexion.setRequestHeader("Content-Type", "application/json");
 
+            // Empaquetado correcto para la lectura del Webhook de n8n
             var paquete = {
-                chatInput: mensaje,
-                sessionId: idSesion
+                body: {
+                    chatInput: mensaje,
+                    sessionId: idSesion
+                }
             };
 
             conexion.onreadystatechange = function () {
