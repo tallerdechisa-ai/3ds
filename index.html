@@ -69,7 +69,7 @@
             conexion.open("POST", urlN8n, true);
             conexion.setRequestHeader("Content-Type", "application/json");
 
-            // Datos directos en la raíz para que n8n los procese de inmediato
+            // Modificado: Enviamos los datos en la raíz plana para que coincida con tu Webhook
             var paquete = {
                 chatInput: mensaje,
                 sessionId: idSesion
@@ -80,7 +80,9 @@
                     if (conexion.status === 200) {
                         try {
                             var datos = JSON.parse(conexion.responseText);
-                            var respuestaText = datos.output || "Sin respuesta del sistema.";
+                            
+                            // Ajustado: Los Agentes de Langchain en n8n devuelven la respuesta en el campo "output"
+                            var respuestaText = datos.output || datos.text || "Sin respuesta del sistema.";
                             actualizarPantalla("3DS", respuestaText, "c");
                         } catch(err) {
                             actualizarPantalla("Error", "Fallo al procesar JSON.", "c");
