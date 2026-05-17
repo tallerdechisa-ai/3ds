@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3DS AI Chat</title>
+    <style>
+        body {
+            background-color: #d8d8d8;
+            font-family: monospace;
+            margin: 0;
+            padding: 8px;
+            color: #222;
+        }
+        #chat-box {
+            background: #ffffff;
+            border: 2px solid #666666;
+            height: 140px;
+            overflow-y: scroll;
+            padding: 4px;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+        .line { margin-bottom: 4px; }
+        .u { color: #0000cc; }
+        .c { color: #b30000; }
+        
+        input[type="text"] {
+            width: 70%;
+            padding: 3px;
+            font-size: 11px;
+            border: 1px solid #777777;
+        }
+        button {
+            width: 24%;
+            padding: 3px;
+            font-size: 11px;
+            background: #e6a100;
+            border: 1px solid #444444;
+        }
+    </style>
+</head>
+<body>
+
+    <div style="font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 4px;">🎮 Conexión Interna 3DS 🎮</div>
+    
+    <div id="chat-box">
+        <div class="line c"><b>3DS:</b> *Bip*... ¡Menú Home cargado! Hola, ¿de qué quieres hablar hoy?</div>
+    </div>
+
+    <input type="text" id="msgInput" placeholder="Habla aquí...">
+    <button onclick="enviar()">Enviar</button>
+
+    <script>
+        var idSesion = "3ds_" + Math.floor(Math.random() * 99999);
+        
+        var urlN8n = "https://adlersc.app.n8n.cloud/webhook-test/3ds-memory";
+
+        function enviar() {
+            var campo = document.getElementById("msgInput");
+            var mensaje = campo.value.trim();
+            if (mensaje === "") return;
+
+            actualizarPantalla("Tú", mensaje, "u");
+            campo.value = "";
+
+            var conexion = new XMLHttpRequest();
+            conexion.open("POST", urlN8n, true);
+            conexion.setRequestHeader("Content-Type", "application/json");
+
+            var paquete = {
+                chatInput: mensaje,
+                sessionId: idSesion
+            };
+
+            conexion.onreadystatechange = function () {
+                if (conexion.readyState === 4) {
+                    if (conexion.status === 200) {
+                        try {
+                            var datos = JSON.parse(conexion.responseText);
+                            var respuestaText = datos.output || "Sin respuesta del sistema.";
+                            actualizarPantalla("3DS", respuestaText, "c");
+                        } catch(err) {
+                            actualizarPantalla("Error", "Fallo al procesar JSON.", "c");
+                        }
+                    } else {
+                        actualizarPantalla("Error", "Código de estado: " + conexion.status, "c");
+                    }
+                }
+            };
+
+            conexion.send(JSON.stringify(paquete));
+        }
+
+        function actualizarPantalla(usuario, texto, estilo) {
+            var contenedor = document.getElementById("chat-box");
+            var bloque = document.createElement("div");
+            bloque.className = "line " + estilo;
+            bloque.innerHTML = "<b>" + usuario + ":</b> " + texto;
+            contenedor.appendChild(bloque);
+            contenedor.scrollTop = contenedor.scrollHeight;
+        }
+    </script>
+</body>
+</html>
