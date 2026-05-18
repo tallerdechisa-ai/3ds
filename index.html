@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -9,58 +9,73 @@
             background-color: #d8d8d8;
             font-family: monospace;
             margin: 0;
-            padding: 8px;
+            padding: 4px;
             color: #222;
+            font-size: 12px;
+        }
+        .titulo {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+            color: #444;
         }
         #chat-box {
             background: #ffffff;
             border: 2px solid #666666;
-            height: 140px;
+            height: 135px;
             overflow-y: scroll;
             padding: 4px;
             margin-bottom: 6px;
-            font-size: 11px;
         }
-        .line { margin-bottom: 4px; }
+        .line { 
+            margin-bottom: 5px; 
+            word-wrap: break-word;
+        }
         .u { color: #0000cc; }
         .c { color: #b30000; }
+        .e { color: #555555; }
         
-        input[type="text"] {
+        #msgInput {
             width: 70%;
             padding: 3px;
-            font-size: 11px;
+            font-size: 12px;
             border: 1px solid #777777;
+            box-sizing: border-box;
         }
-        button {
-            width: 24%;
+        #btnEnviar {
+            width: 26%;
             padding: 3px;
-            font-size: 11px;
+            font-size: 12px;
             background: #e6a100;
             border: 1px solid #444444;
+            color: white;
+            font-weight: bold;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
 
-    <div style="font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 4px;">🎮 Conexión Interna 3DS 🎮</div>
+    <div class="titulo">🎮 Conexión Interna 3DS 🎮</div>
     
     <div id="chat-box">
-        <div class="line c"><b>3DS:</b> *Bip*... ¡Menú Home cargado! Hola, ¿de qué quieres hablar hoy?</div>
+        <div class="line c"><b>3DS:</b> *Bip*... ¡Conexión establecida! Hola, soy tu 3DS con vida. ¿De qué quieres hablar hoy?</div>
     </div>
 
-    <input type="text" id="msgInput" placeholder="Habla aquí...">
-    <button onclick="enviar()">Enviar</button>
+    <form action="javascript:void(0);" onsubmit="enviar(); return false;">
+        <input type="text" id="msgInput" autocomplete="off" placeholder="Habla aquí...">
+        <input type="submit" id="btnEnviar" value="Enviar">
+    </form>
 
     <script>
         var idSesion = "3ds_" + Math.floor(Math.random() * 99999);
-        
-        // ⚠️ PEGA TU URL DE PRODUCCIÓN DE N8N AQUÍ ABAJO ⚠️
-        var urlN8n = "https://adlersc.app.n8n.cloud/webhook/<__PLACEHOLDER_VALUE__webhook-path (e.g., chat-ai)__>";
+        var urlN8n = "https://adlersc.app.n8n.cloud/webhook/9d7eb0a9-1d18-4e66-9b67-0a1f850dbb38";
 
         function enviar() {
             var campo = document.getElementById("msgInput");
-            var mensaje = campo.value.trim();
-            if (mensaje === "") return;
+            var mensaje = campo.value;
+            
+            if (!mensaje || mensaje.replace(/^\s+|\s+$/g, '') === "") return;
 
             actualizarPantalla("Tú", mensaje, "u");
             campo.value = "";
@@ -70,7 +85,7 @@
             conexion.setRequestHeader("Content-Type", "application/json");
 
             var paquete = {
-                chatInput: mensaje,
+                message: mensaje,
                 sessionId: idSesion
             };
 
@@ -79,14 +94,14 @@
                     if (conexion.status === 200) {
                         try {
                             var datos = JSON.parse(conexion.responseText);
-                            // Mapea la propiedad output que genera por defecto el nodo de Agente
-                            var respuestaText = datos.output || datos.text || "Sin respuesta del sistema.";
+                            // Corregido: lee 'response' que es como lo envía tu nodo Send Response
+                            var respuestaText = datos.response || "Sin respuesta del sistema.";
                             actualizarPantalla("3DS", respuestaText, "c");
                         } catch(err) {
-                            actualizarPantalla("Error", "Fallo al procesar JSON.", "c");
+                            actualizarPantalla("Error", "No se pudo procesar la respuesta de la IA.", "e");
                         }
                     } else {
-                        actualizarPantalla("Error", "Código de estado: " + conexion.status, "c");
+                        actualizarPantalla("Error", "Código de estado HTTP: " + conexion.status, "e");
                     }
                 }
             };
