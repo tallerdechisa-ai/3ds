@@ -69,7 +69,8 @@
 
     <script>
         var idSesion = "3ds_" + Math.floor(Math.random() * 99999);
-        var urlN8n = "https://adlersc.app.n8n.cloud/webhook/9d7eb0a9-1d18-4e66-9b67-0a1f850dbb38";
+        // Forzamos el uso de la ruta /webhook-test para evitar restricciones estrictas en la consola antigua
+        var urlN8n = "https://adlersc.app.n8n.cloud/webhook-test/9d7eb0a9-1d18-4e66-9b67-0a1f850dbb38";
 
         function enviar() {
             var campo = document.getElementById("msgInput");
@@ -82,12 +83,8 @@
 
             var conexion = new XMLHttpRequest();
             conexion.open("POST", urlN8n, true);
-            conexion.setRequestHeader("Content-Type", "application/json");
-
-            var paquete = {
-                message: mensaje,
-                sessionId: idSesion
-            };
+            // Evitamos usar encabezados JSON que confundan al motor de la 3DS Old
+            conexion.setRequestHeader("Content-Type", "text/plain");
 
             conexion.onreadystatechange = function () {
                 if (conexion.readyState === 4) {
@@ -95,13 +92,13 @@
                         var respuestaRaw = conexion.responseText;
                         var textoFinal = "";
 
-                        // Extracción manual de texto compatible con el navegador antiguo de la 3DS Old
+                        // Extracción de caracteres manual sin usar JSON.parse (Incompatible con 3DS Old)
                         if (respuestaRaw.indexOf('"response":') !== -1) {
                             var inicio = respuestaRaw.indexOf('"response":"') + 12;
                             var fin = respuestaRaw.lastIndexOf('"');
                             textoFinal = respuestaRaw.substring(inicio, fin);
                             
-                            // Limpieza de saltos de línea y carácteres de escape JSON básicos
+                            // Reemplazo manual de saltos de línea crudos
                             textoFinal = textoFinal.replace(/\\n/g, " ").replace(/\\"/g, '"');
                         } else {
                             textoFinal = respuestaRaw;
@@ -118,9 +115,9 @@
                 }
             };
 
-            // Conversión manual a string para máxima compatibilidad
-            var jsonString = '{"message":"' + mensaje.replace(/"/g, '\\"') + '","sessionId":"' + idSesion + '"}';
-            conexion.send(jsonString);
+            // Formateo del texto plano manual para asegurar la entrada en 'Prepare Input'
+            var paqueteTexto = '{"message":"' + mensaje.replace(/"/g, '\\"') + '","sessionId":"' + idSesion + '"}';
+            conexion.send(paqueteTexto);
         }
 
         function actualizarPantalla(usuario, texto, estilo) {
