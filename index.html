@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=320, initial-scale=1.0, user-scalable=no">
     <title>3DS AI Chat</title>
     <style>
         body {
@@ -92,21 +92,35 @@
             conexion.onreadystatechange = function () {
                 if (conexion.readyState === 4) {
                     if (conexion.status === 200) {
-                        try {
-                            var datos = JSON.parse(conexion.responseText);
-                            // Corregido: lee 'response' que es como lo envía tu nodo Send Response
-                            var respuestaText = datos.response || "Sin respuesta del sistema.";
-                            actualizarPantalla("3DS", respuestaText, "c");
-                        } catch(err) {
-                            actualizarPantalla("Error", "No se pudo procesar la respuesta de la IA.", "e");
+                        var respuestaRaw = conexion.responseText;
+                        var textoFinal = "";
+
+                        // Extracción manual de texto compatible con el navegador antiguo de la 3DS Old
+                        if (respuestaRaw.indexOf('"response":') !== -1) {
+                            var inicio = respuestaRaw.indexOf('"response":"') + 12;
+                            var fin = respuestaRaw.lastIndexOf('"');
+                            textoFinal = respuestaRaw.substring(inicio, fin);
+                            
+                            // Limpieza de saltos de línea y carácteres de escape JSON básicos
+                            textoFinal = textoFinal.replace(/\\n/g, " ").replace(/\\"/g, '"');
+                        } else {
+                            textoFinal = respuestaRaw;
                         }
+
+                        if (textoFinal === "") {
+                            textoFinal = "Sin respuesta del sistema.";
+                        }
+
+                        actualizarPantalla("3DS", textoFinal, "c");
                     } else {
                         actualizarPantalla("Error", "Código de estado HTTP: " + conexion.status, "e");
                     }
                 }
             };
 
-            conexion.send(JSON.stringify(paquete));
+            // Conversión manual a string para máxima compatibilidad
+            var jsonString = '{"message":"' + mensaje.replace(/"/g, '\\"') + '","sessionId":"' + idSesion + '"}';
+            conexion.send(jsonString);
         }
 
         function actualizarPantalla(usuario, texto, estilo) {
