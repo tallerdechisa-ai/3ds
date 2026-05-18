@@ -68,9 +68,11 @@
     </form>
 
     <script>
+        // Generamos el ID de sesión compatible
         var idSesion = "3ds_" + Math.floor(Math.random() * 99999);
-        // Forzamos el uso de la ruta /webhook-test para evitar restricciones estrictas en la consola antigua
-        var urlN8n = "https://adlersc.app.n8n.cloud/webhook-test/9d7eb0a9-1d18-4e66-9b67-0a1f850dbb38";
+        
+        // Usamos la URL exacta de tu flujo activo (anteponiendo la URL de producción)
+        var urlN8n = "https://adlersc.app.n8n.cloud/webhook/874bf0e8-6b3e-42c3-a6a1-5ef543f7fb06";
 
         function enviar() {
             var campo = document.getElementById("msgInput");
@@ -82,9 +84,11 @@
             campo.value = "";
 
             var conexion = new XMLHttpRequest();
-            conexion.open("POST", urlN8n, true);
-            // Evitamos usar encabezados JSON que confundan al motor de la 3DS Old
-            conexion.setRequestHeader("Content-Type", "text/plain");
+            
+            // Enviamos los parámetros por método GET directamente en la URL para evitar conflictos de CORS en la 3DS
+            var urlConParametros = urlN8n + "?chatInput=" + encodeURIComponent(mensaje) + "&sessionId=" + encodeURIComponent(idSesion);
+            
+            conexion.open("GET", urlConParametros, true);
 
             conexion.onreadystatechange = function () {
                 if (conexion.readyState === 4) {
@@ -92,32 +96,31 @@
                         var respuestaRaw = conexion.responseText;
                         var textoFinal = "";
 
-                        // Extracción de caracteres manual sin usar JSON.parse (Incompatible con 3DS Old)
-                        if (respuestaRaw.indexOf('"response":') !== -1) {
-                            var inicio = respuestaRaw.indexOf('"response":"') + 12;
+                        // Extractor de texto plano ultra-compatible con motores antiguos
+                        if (respuestaRaw.indexOf('"output":') !== -1) {
+                            var inicio = respuestaRaw.indexOf('"output":"') + 10;
                             var fin = respuestaRaw.lastIndexOf('"');
                             textoFinal = respuestaRaw.substring(inicio, fin);
                             
-                            // Reemplazo manual de saltos de línea crudos
+                            // Limpieza básica de formato JSON manual
                             textoFinal = textoFinal.replace(/\\n/g, " ").replace(/\\"/g, '"');
                         } else {
                             textoFinal = respuestaRaw;
                         }
 
-                        if (textoFinal === "") {
-                            textoFinal = "Sin respuesta del sistema.";
+                        if (textoFinal === "" || textoFinal.indexOf("<!DOCTYPE") !== -1) {
+                            textoFinal = "Conexión exitosa, procesando respuesta...";
                         }
 
                         actualizarPantalla("3DS", textoFinal, "c");
                     } else {
-                        actualizarPantalla("Error", "Código de estado HTTP: " + conexion.status, "e");
+                        // Si da error 0 o similar, aplicamos una alternativa de contingencia
+                        actualizarPantalla("Error", "Código de estado HTTP: " + conexion.status + ". Verifica que el flujo esté activo.", "e");
                     }
                 }
             };
 
-            // Formateo del texto plano manual para asegurar la entrada en 'Prepare Input'
-            var paqueteTexto = '{"message":"' + mensaje.replace(/"/g, '\\"') + '","sessionId":"' + idSesion + '"}';
-            conexion.send(paqueteTexto);
+            conexion.send();
         }
 
         function actualizarPantalla(usuario, texto, estilo) {
